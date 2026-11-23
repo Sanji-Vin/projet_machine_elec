@@ -58,10 +58,10 @@
       const fa = e.faible, jf = Math.round(fa.rpm.length * .9);
       const zone = (x0, x1, col) => ({ type: 'rect', xref: 'x', yref: 'paper', x0, x1, y0: 0, y1: 1, fillcolor: col, opacity: .07, line: { width: 0 }, layer: 'below' });
       Plotly.newPlot(el, [
-        { x: pl.rpm, y: pl.C, name: `C max — batterie pleine (${fr(pl.vdc)} V)`, line: { color: C.cy, width: 4 } },
-        { x: e.faible.rpm, y: e.faible.C, name: `C max — batterie 15 % (${fr(e.faible.vdc)} V)`, line: { color: C.cy, width: 2, dash: 'dash' } },
-        { x: S.charge.rpm, y: S.charge.C, name: 'Couple résistant du rotor', line: { color: C.gr, width: 3 } },
-        { x: pl.rpm, y: pl.P, name: 'P max (kW)', yaxis: 'y2', line: { color: C.or, width: 2 } },
+        { x: pl.rpm, y: pl.C, name: `C max · ${fr(pl.vdc)} V`, line: { color: C.cy, width: 4 } },
+        { x: e.faible.rpm, y: e.faible.C, name: `C max · ${fr(e.faible.vdc)} V`, line: { color: C.cy, width: 2, dash: 'dash' } },
+        { x: S.charge.rpm, y: S.charge.C, name: 'Rotor', line: { color: C.gr, width: 3 } },
+        { x: pl.rpm, y: pl.P, name: 'P max', yaxis: 'y2', line: { color: C.or, width: 2 } },
         { x: [K.rpm_stat], y: [K.C_stat], name: 'Stationnaire', mode: 'markers', marker: { size: 14, color: C.gr, line: { color: '#fff', width: 2 } } },
         { x: [K.rpm_maxi], y: [K.C_maxi], name: 'Poussée max', mode: 'markers', marker: { size: 14, symbol: 'square', color: C.vi, line: { color: '#fff', width: 2 } } },
       ], LAY({
@@ -108,6 +108,19 @@
   (function calculateur() {
     const NOPT = [4, 6, 8, 12, 16];
     const $ = id => document.getElementById(id);
+    function drawViz(N, D) {
+      const svg = $('calc-viz'); if (!svg) return;
+      const Rr = Math.max(D * 0.53 / Math.sin(Math.PI / N), D * 0.9), sc = 92 / (Rr + D / 2);
+      let h = `<circle r="${Rr * sc}" fill="none" stroke="rgba(140,170,230,.35)" stroke-width="2"/>`;
+      for (let i = 0; i < N; i++) {
+        const a = (i + .5) * 2 * Math.PI / N, x = Rr * sc * Math.cos(a), y = Rr * sc * Math.sin(a);
+        h += `<line x1="0" y1="0" x2="${x}" y2="${y}" stroke="rgba(140,170,230,.35)" stroke-width="2"/>`;
+        h += `<circle cx="${x}" cy="${y}" r="${D / 2 * sc}" fill="rgba(58,214,255,.14)" stroke="${C.cy}" stroke-width="1.5"/>`;
+        h += `<circle cx="${x}" cy="${y}" r="4" fill="${C.or}"/>`;
+      }
+      h += `<ellipse rx="${0.95 * sc}" ry="${1.5 * sc}" fill="#e8f0ff" opacity=".9"/>`;
+      svg.innerHTML = h;
+    }
     function upd() {
       const m = +$('s-m').value, N = NOPT[+$('s-n').value], D = +$('s-d').value, k = +$('s-k').value;
       $('o-m').textContent = `${fr(m)} kg`; $('o-n').textContent = N; $('o-d').textContent = `${fr(D, 2)} m`; $('o-k').textContent = `× ${fr(k, 2)}`;
@@ -120,6 +133,7 @@
       $('r-C').textContent = `${fr(Ch)} N·m`; $('r-P').textContent = `${fr(Ph / 1000, 1)} kW`;
       $('r-Cm').textContent = `${fr(Cm)} N·m`; $('r-Pm').textContent = `${fr(Pm / 1000, 1)} kW`;
       $('r-Pt').textContent = `${fr(Pt / 1000)} kW`; $('r-aut').textContent = `${fr(aut, 0)} min`;
+      drawViz(N, D);
       const ok = Cm <= P.C_MAX && Pm <= P.P_MAX;
       const v = $('verdict'); v.className = 'verdict ' + (ok ? 'ok' : 'ko');
       v.textContent = ok ? `✓ Notre moteur (${P.C_MAX} N·m · ${P.P_MAX / 1000} kW) convient`
@@ -160,16 +174,32 @@
     const phases = [[6, 'Démarrage des rotors'], [31, 'Décollage vertical'], [121, 'Transition & montée'], [801, 'Croisière à 90 km/h'], [891, 'Descente'], [906, 'Stationnaire d\'approche'], [935, 'Atterrissage'], [1e9, 'Arrêt des rotors']];
     const tm = m.t.map(v => v / 60);
     const cursor = x => ({ type: 'line', xref: 'x', yref: 'paper', x0: x, x1: x, y0: 0, y1: 1, line: { color: '#fff', width: 1.5, dash: 'dot' } });
+    // phases de vol (min) : fond coloré + étiquette, pour lire les courbes d'un coup d'œil
+    const bands = [[0, 121 / 60, C.cy, 'Décollage'], [121 / 60, 801 / 60, C.gr, 'Croisière'], [801 / 60, tEnd / 60, C.vi, 'Atterr.']];
+    const bandShapes = bands.map(([a, b, col]) => ({ type: 'rect', xref: 'x', yref: 'paper', x0: a, x1: b, y0: 0, y1: 1, fillcolor: col, opacity: .07, line: { width: 0 }, layer: 'below' }));
+    const bandLabels = bands.map(([a, b, col, txt]) => ({ x: (a + b) / 2, y: 1, xref: 'x', yref: 'paper', yanchor: 'top', text: txt, showarrow: false, font: { size: 12, color: col } }));
+    let mShapes = [];
     function initCharts() {
-      const lay = (y1, y2) => LAY({ margin: { l: 58, r: 58, t: 34, b: 36 }, xaxis: AX('Temps (min)', { title: { text: '' } }), yaxis: AX(y1), yaxis2: AX(y2, { overlaying: 'y', side: 'right', showgrid: false }), legend: { orientation: 'h', x: 0, y: 1.28, bgcolor: 'rgba(0,0,0,0)', font: { size: 14 } }, shapes: [cursor(0)] });
+      const yTick = { tickfont: { size: 13 }, nticks: 5 };
+      const lay = (y1, r1, y2, r2, col1, col2, extraAnn = []) => LAY({
+        margin: { l: 56, r: 50, t: 30, b: 40 },
+        xaxis: AX('Temps (min)', { range: [0, tEnd / 60], dtick: 2, tickfont: { size: 13 }, title: { text: 'Temps (min)', font: { size: 13 }, standoff: 4 } }),
+        yaxis: AX(y1, Object.assign({ range: r1, title: { text: y1, font: { size: 13, color: col1 } }, tickfont: { size: 13, color: col1 } }, { nticks: 5 })),
+        yaxis2: AX(y2, Object.assign({ overlaying: 'y', side: 'right', showgrid: false, zeroline: false, range: r2, title: { text: y2, font: { size: 13, color: col2 } }, tickfont: { size: 13, color: col2 } }, { nticks: 5 })),
+        legend: { orientation: 'h', x: 0, y: 1.02, yanchor: 'bottom', bgcolor: 'rgba(0,0,0,0)', font: { size: 13 } },
+        shapes: [...bandShapes, cursor(0)], annotations: [...bandLabels, ...extraAnn],
+      });
+      const iRg = m.p_total.indexOf(Math.min(...m.p_total));
       Plotly.newPlot('ch-mis1', [
-        { x: tm, y: m.p_total, name: 'Puissance batterie (kW)', line: { color: C.ye, width: 2 } },
-        { x: tm, y: m.soc, name: 'État de charge (%)', yaxis: 'y2', line: { color: C.gr, width: 2 } },
-      ], lay('kW', '%'), CFG);
+        { x: tm, y: m.p_total, name: 'Puissance batterie', line: { color: C.ye, width: 2 }, hovertemplate: '%{x:.1f} min · %{y:.0f} kW<extra></extra>' },
+        { x: tm, y: m.soc, name: 'État de charge', yaxis: 'y2', line: { color: C.gr, width: 2.5 }, hovertemplate: '%{x:.1f} min · %{y:.0f} %<extra></extra>' },
+      ], lay('kW', [-100, 400], '%', [0, 100], C.ye, C.gr, [
+        { x: tm[iRg], y: m.p_total[iRg], ax: -50, ay: 0, xanchor: 'right', text: 'récupération', arrowcolor: C.ye, arrowsize: .8, font: { size: 12, color: C.ye } },
+      ]), CFG);
       Plotly.newPlot('ch-mis2', [
-        { x: tm, y: m.couple, name: 'Couple moteur (N·m)', line: { color: C.or, width: 2 } },
-        { x: tm, y: m.temp, name: 'T° bobinage (°C)', yaxis: 'y2', line: { color: C.rd, width: 2 } },
-      ], lay('N·m', '°C'), CFG);
+        { x: tm, y: m.couple, name: 'Couple moteur', line: { color: C.or, width: 2 }, hovertemplate: '%{x:.1f} min · %{y:.0f} N·m<extra></extra>' },
+        { x: tm, y: m.temp, name: 'T° bobinage', yaxis: 'y2', line: { color: C.rd, width: 2.5 }, hovertemplate: '%{x:.1f} min · %{y:.0f} °C<extra></extra>' },
+      ], lay('N·m', [-100, 300], '°C', [0, 100], C.or, C.rd), CFG);
       inited = true;
     }
     function show(force) {
@@ -184,7 +214,8 @@
       const now = performance.now();
       if (inited && (force || now - lastPlot > 120)) {
         lastPlot = now;
-        Plotly.relayout('ch-mis1', { shapes: [cursor(t / 60)] }); Plotly.relayout('ch-mis2', { shapes: [cursor(t / 60)] });
+        mShapes = [...bandShapes, cursor(t / 60)];
+        Plotly.relayout('ch-mis1', { shapes: mShapes }); Plotly.relayout('ch-mis2', { shapes: mShapes });
       }
     }
     function loop(ts) {
@@ -265,8 +296,37 @@
     if (m3) V3D.attach(s.querySelector('.v3d'), m3);
     s.querySelectorAll('.chart').forEach(el => { if (charts[el.id] && !drawn.has(el.id)) { charts[el.id](el); drawn.add(el.id); } });
     if (players[m3]) players[m3].enter();
-    setTimeout(() => { s.querySelectorAll('.js-plotly-plot').forEach(el => Plotly.Plots.resize(el)); V3D.resize(); }, 60);
+    [60, 800].forEach(d => setTimeout(() => { s.querySelectorAll('.js-plotly-plot').forEach(el => Plotly.Plots.resize(el)); V3D.resize(); }, d));
+    sendState();
   }
+
+  // ---------- vue présentateur (fenêtre séparée, synchronisée par postMessage) ----------
+  const SPEAKERS = window.SPEAKERS || ['Intervenant 1', 'Intervenant 2', 'Intervenant 3', 'Intervenant 4', 'Intervenant 5'];
+  const slideInfo = slides.map(s => {
+    const h = s.querySelector('h1, h2'), nt = s.querySelector('.notes');
+    return { title: h ? h.textContent.replace(/\s+/g, ' ').trim() : '', notes: nt ? nt.textContent.trim() : '', speaker: +s.dataset.speaker || 0 };
+  });
+  const presenters = new Set();
+  function sendState(target) {
+    const msg = { type: 'evtol-state', i: cur, slides: slideInfo, speakers: SPEAKERS };
+    if (target) { target.postMessage(msg, '*'); return; }
+    presenters.forEach(w => { if (w.closed) presenters.delete(w); else w.postMessage(msg, '*'); });
+  }
+  let pCount = 0;
+  function openPresenter() {
+    const w = window.open('presenter.html', 'presenter-' + (++pCount), 'width=1100,height=760');
+    if (!w) { alert('Fenêtre bloquée : autorisez les pop-ups pour cette page.'); return; }
+    presenters.add(w);
+  }
+  addEventListener('message', e => {
+    const d = e.data || {};
+    if (d.type === 'evtol-hello') { presenters.add(e.source); sendState(e.source); }
+    else if (d.type === 'evtol-go') go(d.i);
+  });
+  const pBtn = document.createElement('button');
+  pBtn.id = 'presenter-btn'; pBtn.title = 'Vue présentateur (P)'; pBtn.textContent = '🎤 Présentateur';
+  pBtn.addEventListener('click', openPresenter);
+  document.getElementById('footer').appendChild(pBtn);
   addEventListener('keydown', e => {
     if (e.target.matches('input, select')) { if (e.key !== 'PageDown' && e.key !== 'PageUp') return; }
     if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); go(cur + 1); }
@@ -274,7 +334,13 @@
     else if (e.key === 'Home') go(0); else if (e.key === 'End') go(slides.length - 1);
     else if (e.key.toLowerCase() === 'f') { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
     else if (e.key.toLowerCase() === 'n') notes.classList.toggle('show');
+    else if (e.key.toLowerCase() === 'p') openPresenter();
   });
   addEventListener('resize', () => { if (cur >= 0) slides[cur].querySelectorAll('.js-plotly-plot').forEach(el => Plotly.Plots.resize(el)); });
+  // un graphique créé pendant l'animation d'entrée garde sa taille initiale : on le recale dès que sa carte change de taille
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(es => es.forEach(e => { const el = e.target; if (el.classList.contains('js-plotly-plot') && el.offsetParent) Plotly.Plots.resize(el); }));
+    document.querySelectorAll('.chart').forEach(el => ro.observe(el));
+  }
   go((parseInt(location.hash.slice(1)) || 1) - 1);
 })();

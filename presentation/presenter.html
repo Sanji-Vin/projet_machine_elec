@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vue présentateur</title>
+<style>
+:root {
+  --bg: #060b18; --bg2: #0b1430; --card: rgba(255,255,255,.04); --line: rgba(140,170,230,.18);
+  --txt: #e8f0ff; --mut: #8ea3c8; --cy: #3ad6ff; --or: #ff8a3d; --gr: #46e6a6; --vi: #a98bff; --ye: #ffd166; --rd: #ff4d6d;
+  --fh: "Bahnschrift", "Segoe UI", system-ui, sans-serif; --fb: "Segoe UI", system-ui, sans-serif;
+  --nf: 22px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--txt); font-family: var(--fb); }
+body { display: grid; grid-template-rows: auto auto 1fr; height: 100vh; }
+button, select { font: inherit; color: var(--txt); background: var(--bg2); border: 1px solid var(--line); border-radius: 8px; padding: .35em .8em; cursor: pointer; }
+button:hover, select:hover { border-color: var(--cy); }
+.mut { color: var(--mut); }
+
+header { display: flex; align-items: center; gap: 1.2em; flex-wrap: wrap; padding: .8em 1.2em; border-bottom: 1px solid var(--line); background: var(--bg2); }
+header h1 { font-family: var(--fh); font-size: 1.05em; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--cy); margin: 0; }
+.grow { flex: 1; }
+#timer { font-family: Consolas, monospace; font-size: 1.8em; font-variant-numeric: tabular-nums; }
+#timer.over { color: var(--rd); }
+#clock { font-family: Consolas, monospace; color: var(--mut); }
+#status { font-size: .85em; padding: .2em .7em; border-radius: 99px; border: 1px solid var(--line); }
+#status.ok { color: var(--gr); border-color: var(--gr); } #status.ko { color: var(--rd); border-color: var(--rd); }
+
+#speakers { display: grid; grid-template-columns: repeat(5, 1fr); gap: .6em; padding: .8em 1.2em; }
+.sp { border: 1px solid var(--line); border-left: 5px solid var(--c); border-radius: 10px; padding: .5em .8em; background: var(--card); opacity: .55; transition: opacity .2s, background .2s; }
+.sp.on { opacity: 1; background: color-mix(in srgb, var(--c) 14%, transparent); }
+.sp.me { outline: 2px dashed var(--c); outline-offset: 2px; }
+.sp .nm { font-family: var(--fh); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp .rg { font-size: .8em; color: var(--mut); }
+.sp .tm { font-family: Consolas, monospace; font-size: .9em; font-variant-numeric: tabular-nums; }
+.sp .tm.over { color: var(--rd); }
+.bar { height: 4px; border-radius: 2px; background: var(--line); margin-top: .35em; overflow: hidden; }
+.bar div { height: 100%; background: var(--c); width: 0; }
+
+main { display: grid; grid-template-columns: 1fr 300px; gap: 1em; padding: 0 1.2em 1em; min-height: 0; }
+#current { display: flex; flex-direction: column; min-height: 0; gap: .7em; }
+#who { display: flex; align-items: baseline; gap: .8em; flex-wrap: wrap; }
+#who .num { font-family: var(--fh); color: var(--mut); font-size: 1.1em; }
+#who .title { font-family: var(--fh); font-size: 1.6em; font-weight: 600; }
+#who .spk { margin-left: auto; font-family: var(--fh); font-size: 1.15em; font-weight: 600; padding: .15em .8em; border-radius: 99px; background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); border: 1px solid var(--c); }
+#banner { display: none; padding: .55em 1em; border-radius: 10px; font-weight: 600; }
+#banner.show { display: block; }
+#banner.handoff { background: color-mix(in srgb, var(--or) 16%, transparent); border: 1px solid var(--or); color: var(--or); }
+#banner.mine { background: color-mix(in srgb, var(--gr) 16%, transparent); border: 1px solid var(--gr); color: var(--gr); }
+#banner.soon { background: color-mix(in srgb, var(--ye) 14%, transparent); border: 1px solid var(--ye); color: var(--ye); }
+#notes { flex: 1; overflow: auto; font-size: var(--nf); line-height: 1.55; padding: 1em 1.2em; border-radius: 12px; border: 1px solid var(--line); background: var(--card); }
+#notes:empty::before { content: "Pas de notes pour cette slide."; color: var(--mut); font-style: italic; }
+#next { padding: .7em 1em; border-radius: 10px; border: 1px solid var(--line); color: var(--mut); }
+#next b { color: var(--txt); font-family: var(--fh); }
+.ctrl { display: flex; gap: .5em; flex-wrap: wrap; align-items: center; }
+
+aside { display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+aside h2 { margin: 0; padding: .6em .9em; font-family: var(--fh); font-size: .85em; letter-spacing: .12em; text-transform: uppercase; color: var(--mut); border-bottom: 1px solid var(--line); font-weight: 600; }
+#list { overflow: auto; flex: 1; }
+.it { display: flex; gap: .6em; align-items: center; padding: .45em .9em; cursor: pointer; border-left: 4px solid var(--c); font-size: .92em; }
+.it:hover { background: var(--card); }
+.it.on { background: color-mix(in srgb, var(--c) 18%, transparent); font-weight: 600; }
+.it.mine .n::after { content: " ★"; color: var(--ye); }
+.it .n { color: var(--mut); width: 2.6em; flex: none; font-variant-numeric: tabular-nums; }
+.it .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+#waiting { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; background: var(--bg); padding: 2em; font-size: 1.2em; line-height: 1.6; }
+#waiting.hide { display: none; }
+kbd { font-family: Consolas, monospace; border: 1px solid var(--line); border-radius: 4px; padding: 0 .35em; }
+
+@media (max-width: 900px) {
+  main { grid-template-columns: 1fr; }
+  aside { max-height: 30vh; }
+  #speakers { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Vue présentateur</h1>
+  <label class="mut">Je suis :
+    <select id="me"><option value="0">Tout le groupe</option></select>
+  </label>
+  <span id="status" class="ko">Non connecté</span>
+  <span class="grow"></span>
+  <span class="ctrl">
+    <button id="font-dn" title="Réduire le texte">A−</button>
+    <button id="font-up" title="Agrandir le texte">A+</button>
+  </span>
+  <span id="timer">00:00</span>
+  <span class="ctrl">
+    <button id="play">▶ Démarrer</button>
+    <button id="reset" title="Remettre les chronos à zéro">↺</button>
+  </span>
+  <span id="clock"></span>
+</header>
+
+<section id="speakers"></section>
+
+<main>
+  <section id="current">
+    <div id="who"><span class="num"></span><span class="title"></span><span class="spk"></span></div>
+    <div id="banner"></div>
+    <div id="notes"></div>
+    <div id="next"></div>
+    <div class="ctrl">
+      <button id="prev">◀ Précédente</button>
+      <button id="nextb">Suivante ▶</button>
+      <span class="mut">Raccourcis : <kbd>←</kbd> <kbd>→</kbd> navigation · <kbd>T</kbd> chrono</span>
+    </div>
+  </section>
+  <aside>
+    <h2>Slides</h2>
+    <div id="list"></div>
+  </aside>
+</main>
+
+<div id="waiting">
+  <div>En attente de la présentation…<br>
+  <span class="mut">Ouvrez cette vue depuis la présentation (bouton « 🎤 Présentateur » ou touche <kbd>P</kbd>).</span></div>
+</div>
+
+<script>
+(() => {
+  const TOTAL_MIN = 20;                       // durée cible de l'exposé
+  const COLORS = ['var(--cy)', 'var(--gr)', 'var(--vi)', 'var(--or)', 'var(--ye)'];
+  const $ = id => document.getElementById(id);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('evtol-pres-' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('evtol-pres-' + k, JSON.stringify(v)); } catch (e) {} },
+  };
+  const mmss = ms => { const s = Math.max(0, Math.floor(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
+  const col = sp => COLORS[(sp - 1) % COLORS.length] || 'var(--mut)';
+
+  let slides = [], speakers = [], cur = -1, built = false;
+  let me = store.get('me', 0), nf = store.get('nf', 22);
+  document.documentElement.style.setProperty('--nf', nf + 'px');
+
+  // ---------- chronos ----------
+  let running = false, lastTick = 0, total = 0, perSpk = [0, 0, 0, 0, 0, 0];
+  function tick() {
+    const now = performance.now();
+    if (running) {
+      const dt = now - lastTick; total += dt;
+      const sp = slides[cur] && slides[cur].speaker; if (sp) perSpk[sp] += dt;
+    }
+    lastTick = now;
+    $('timer').textContent = mmss(total);
+    $('timer').classList.toggle('over', total > TOTAL_MIN * 60000);
+    const target = TOTAL_MIN * 60000 / Math.max(1, speakers.length);
+    speakers.forEach((_, k) => {
+      const el = document.querySelector(`.sp[data-k="${k + 1}"]`); if (!el) return;
+      const t = perSpk[k + 1], tm = el.querySelector('.tm');
+      tm.textContent = mmss(t) + ' / ' + mmss(target);
+      tm.classList.toggle('over', t > target);
+      el.querySelector('.bar div').style.width = Math.min(100, t / target * 100) + '%';
+    });
+    $('clock').textContent = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  }
+  function setRunning(r) { running = r; lastTick = performance.now(); $('play').textContent = r ? '❚❚ Pause' : '▶ Démarrer'; }
+  $('play').onclick = () => setRunning(!running);
+  $('reset').onclick = () => { total = 0; perSpk = perSpk.map(() => 0); setRunning(false); tick(); };
+  setInterval(tick, 250);
+
+  // ---------- liaison avec la présentation ----------
+  const deck = window.opener;
+  const send = msg => { if (deck && !deck.closed) deck.postMessage(msg, '*'); };
+  const goTo = i => { if (i >= 0 && i < slides.length) send({ type: 'evtol-go', i }); };
+  function ping() {
+    const ok = deck && !deck.closed;
+    $('status').textContent = ok ? 'Connecté' : 'Présentation fermée';
+    $('status').className = ok ? 'ok' : 'ko';
+    if (ok) send({ type: 'evtol-hello' });     // se ré-annonce (utile si la présentation a été rechargée)
+  }
+  if (deck) send({ type: 'evtol-hello' });
+  setInterval(ping, 1000); ping();
+
+  addEventListener('message', e => {
+    const d = e.data || {};
+    if (d.type !== 'evtol-state') return;
+    slides = d.slides; speakers = d.speakers;
+    if (!built) build();
+    if (cur !== -1 && d.i !== cur && !running && total === 0) setRunning(true);   // démarrage auto au premier changement de slide
+    if (d.i === cur) return;
+    cur = d.i; render();
+    $('waiting').classList.add('hide');
+  });
+
+  function build() {
+    built = true;
+    const sel = $('me');
+    speakers.forEach((n, k) => { const o = document.createElement('option'); o.value = k + 1; o.textContent = n; sel.appendChild(o); });
+    sel.value = me;
+    sel.onchange = () => { me = +sel.value; store.set('me', me); render(); };
+
+    $('speakers').innerHTML = '';
+    speakers.forEach((n, k) => {
+      const idx = slides.map((s, i) => s.speaker === k + 1 ? i + 1 : 0).filter(Boolean);
+      const rg = idx.length ? (idx.length > 1 ? `slides ${idx[0]}–${idx[idx.length - 1]}` : `slide ${idx[0]}`) : 'aucune slide';
+      const el = document.createElement('div');
+      el.className = 'sp'; el.dataset.k = k + 1; el.style.setProperty('--c', col(k + 1));
+      el.innerHTML = `<div class="nm"></div><div class="rg">${rg}</div><div class="tm"></div><div class="bar"><div></div></div>`;
+      el.querySelector('.nm').textContent = n;
+      $('speakers').appendChild(el);
+    });
+
+    $('list').innerHTML = '';
+    slides.forEach((s, i) => {
+      const el = document.createElement('div');
+      el.className = 'it'; el.dataset.i = i; el.style.setProperty('--c', col(s.speaker));
+      el.innerHTML = `<span class="n">${i + 1}</span><span class="t"></span>`;
+      el.querySelector('.t').textContent = s.title;
+      el.title = (speakers[s.speaker - 1] || '') + ' · ' + s.title;
+      el.onclick = () => goTo(i);
+      $('list').appendChild(el);
+    });
+  }
+
+  function render() {
+    const s = slides[cur]; if (!s) return;
+    const nx = slides[cur + 1];
+    const who = $('who');
+    who.style.setProperty('--c', col(s.speaker));
+    who.querySelector('.num').textContent = `${cur + 1} / ${slides.length}`;
+    who.querySelector('.title').textContent = s.title;
+    who.querySelector('.spk').textContent = '🎤 ' + (speakers[s.speaker - 1] || '—');
+    $('notes').textContent = s.notes;
+    $('notes').scrollTop = 0;
+
+    $('next').innerHTML = nx ? `Suivante : <b></b> <span class="mut"></span>` : '<b>Dernière slide</b> · questions';
+    if (nx) { $('next').querySelector('b').textContent = nx.title; $('next').querySelector('.mut').textContent = '· ' + (speakers[nx.speaker - 1] || ''); }
+
+    // bandeau : passage de relais / mon tour
+    const b = $('banner'); let txt = '', cls = '';
+    if (me && s.speaker === me) {
+      cls = 'mine'; txt = '● C\'est à toi de parler.';
+      if (nx && nx.speaker !== me) txt += ` Après cette slide, tu passes la parole à ${speakers[nx.speaker - 1]}.`;
+    } else if (me) {
+      const k = slides.findIndex((x, i) => i > cur && x.speaker === me);
+      if (k === cur + 1) { cls = 'soon'; txt = `▲ À toi à la prochaine slide (« ${slides[k].title} »).`; }
+      else if (k > 0) { cls = 'soon'; txt = `À toi dans ${k - cur} slides (slide ${k + 1}).`; }
+    }
+    if (!cls && nx && nx.speaker !== s.speaker) { cls = 'handoff'; txt = `⇄ Passage de relais après cette slide : ${speakers[s.speaker - 1]} → ${speakers[nx.speaker - 1]}`; }
+    b.className = cls ? 'show ' + cls : ''; b.textContent = txt;
+
+    document.querySelectorAll('.sp').forEach(el => { el.classList.toggle('on', +el.dataset.k === s.speaker); el.classList.toggle('me', +el.dataset.k === me); });
+    document.querySelectorAll('.it').forEach(el => {
+      const i = +el.dataset.i; el.classList.toggle('on', i === cur); el.classList.toggle('mine', !!me && slides[i].speaker === me);
+      if (i === cur) el.scrollIntoView({ block: 'nearest' });
+    });
+    document.title = `${cur + 1}/${slides.length} · ${s.title} — présentateur`;
+  }
+
+  $('prev').onclick = () => goTo(cur - 1);
+  $('nextb').onclick = () => goTo(cur + 1);
+  const font = d => { nf = Math.max(14, Math.min(44, nf + d)); store.set('nf', nf); document.documentElement.style.setProperty('--nf', nf + 'px'); };
+  $('font-up').onclick = () => font(2); $('font-dn').onclick = () => font(-2);
+  addEventListener('keydown', e => {
+    if (e.target.matches('select')) return;
+    if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); goTo(cur + 1); }
+    else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); goTo(cur - 1); }
+    else if (e.key === 'Home') goTo(0); else if (e.key === 'End') goTo(slides.length - 1);
+    else if (e.key.toLowerCase() === 't') setRunning(!running);
+  });
+  tick();
+})();
+</script>
+</body>
+</html>
