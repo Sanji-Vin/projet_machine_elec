@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taxi-drone eVTOL</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="deck">
+
+<!-- 1. TITRE -->
+<section class="slide hero" data-3d="hero">
+  <div class="v3d full"></div>
+  <div class="hero-overlay">
+    <div class="kicker">Machines électriques · Projet n°9 · 24/11</div>
+    <h1>Taxi-drone <span class="grad">eVTOL</span></h1>
+    <p class="subtitle">Le moteur synchrone<br>au cœur du vol vertical</p>
+    <div class="authors">[Nom Prénom 1] · [Nom Prénom 2] · [Nom Prénom 3]</div>
+  </div>
+  <aside class="notes">Accroche : « Imaginez traverser la ville en 15 minutes, sans bruit de moteur thermique, sans piste : un drone de 950 kg qui décolle à la verticale. Quel moteur électrique peut faire ça, en toute sécurité ? » C'est la question de notre projet.</aside>
+</section>
+
+<!-- 2. PLAN -->
+<section class="slide">
+  <div class="kicker">Plan</div>
+  <h2>Trois séances</h2>
+  <div class="timeline">
+    <div class="step now"><div class="date">24/11</div><div class="sico">🚁</div><h3>Mise en situation & courbes</h3><span class="badge">Aujourd'hui</span></div>
+    <div class="step"><div class="date">01/12</div><div class="sico">🧲</div><h3>Constitution & principe</h3></div>
+    <div class="step"><div class="date">08/12</div><div class="sico">🎛️</div><h3>Commande & dimensionnement</h3></div>
+  </div>
+  <aside class="notes">24/11 : le taxi-drone, le cahier des charges du moteur, pourquoi un moteur synchrone, les courbes et la simulation. 01/12 : stator, rotor à aimants en 3D, champ tournant, modèle électrique (Behn-Eschenburg). 08/12 : onduleur et autopilotage, choix final du moteur, bilan.</aside>
+</section>
+
+<!-- 3. INTRODUCTION -->
+<section class="slide">
+  <div class="kicker">01 — Introduction</div>
+  <h2><span class="cy">e</span>lectric <span class="cy">V</span>ertical <span class="cy">T</span>ake-<span class="cy">O</span>ff &amp; <span class="cy">L</span>anding</h2>
+  <div class="kpis">
+    <div class="kpi"><div class="kico">🌱</div><div class="kv cy">0</div><div class="kl">émission locale</div></div>
+    <div class="kpi"><div class="kico">🛬</div><div class="kv or">0 m</div><div class="kl">de piste</div></div>
+    <div class="kpi"><div class="kico">⏱️</div><div class="kv gr">≈ 4×</div><div class="kl">plus rapide que la voiture</div></div>
+  </div>
+  <div class="mtl">
+    <div class="ms"><div class="my">2011</div><div class="md"></div><div class="mt">1<sup>er</sup> vol habité<br><span class="mut">e-volo VC1</span></div></div>
+    <div class="ms"><div class="my">2017</div><div class="md"></div><div class="mt">Démo taxi-drone<br><span class="mut">Dubaï</span></div></div>
+    <div class="ms"><div class="my">2023</div><div class="md"></div><div class="mt">1<sup>er</sup> certificat<br><span class="mut">EHang EH216-S</span></div></div>
+    <div class="ms"><div class="my">Auj.</div><div class="md"></div><div class="mt">Joby, Archer,<br>Volocopter, Airbus…</div></div>
+  </div>
+  <aside class="notes">La mobilité aérienne urbaine veut transporter des passagers au-dessus des embouteillages. eVTOL = aéronef électrique à décollage et atterrissage verticaux. « ≈ 4× » : ordre de grandeur pour un trajet aéroport → centre-ville aux heures de pointe. 2011 : premier vol habité d'un multicoptère électrique (e-volo VC1, Allemagne). 2017 : démonstration sans pilote à Dubaï (Volocopter). 2023 : EHang EH216-S, premier certificat de type pour un eVTOL de passagers sans pilote (Chine). Sans moteur thermique, toute la propulsion repose sur des moteurs électriques : des moteurs synchrones à aimants permanents.</aside>
+</section>
+
+<!-- 4. ARCHITECTURES -->
+<section class="slide">
+  <div class="kicker">01 — Introduction</div>
+  <h2>Trois familles d'eVTOL</h2>
+  <div class="cols c3">
+    <div class="card arch chosen">
+      <svg viewBox="0 0 200 110" class="archsvg"><g class="ic">
+        <ellipse cx="100" cy="70" rx="26" ry="16"/><line x1="100" y1="54" x2="100" y2="36"/><circle cx="100" cy="34" r="56" class="thin"/>
+        <g class="rot"><ellipse cx="44" cy="34" rx="20" ry="4"/><ellipse cx="156" cy="34" rx="20" ry="4"/><ellipse cx="72" cy="22" rx="20" ry="4"/><ellipse cx="128" cy="22" rx="20" ry="4"/></g>
+        <line x1="86" y1="86" x2="80" y2="98"/><line x1="114" y1="86" x2="120" y2="98"/><line x1="68" y1="98" x2="132" y2="98"/></g></svg>
+      <h3>Multicoptère <span class="tag">notre choix</span></h3>
+      <div class="pm"><span class="p">+ simple, redondant</span><span class="m">− autonomie</span></div>
+    </div>
+    <div class="card arch">
+      <svg viewBox="0 0 200 110" class="archsvg"><g class="ic">
+        <path d="M30 62 L170 62 L180 58 L170 54 L30 54 Z"/><line x1="40" y1="58" x2="160" y2="58"/>
+        <g class="rot"><ellipse cx="60" cy="42" rx="16" ry="3"/><ellipse cx="100" cy="42" rx="16" ry="3"/><ellipse cx="140" cy="42" rx="16" ry="3"/></g>
+        <line x1="60" y1="45" x2="60" y2="58"/><line x1="100" y1="45" x2="100" y2="58"/><line x1="140" y1="45" x2="140" y2="58"/>
+        <ellipse cx="20" cy="58" rx="3" ry="12"/></g></svg>
+      <h3>Portance + croisière</h3>
+      <div class="pm"><span class="p">+ autonomie</span><span class="m">− rotors inutiles en croisière</span></div>
+    </div>
+    <div class="card arch">
+      <svg viewBox="0 0 200 110" class="archsvg"><g class="ic">
+        <path d="M30 62 L170 62 L180 58 L170 54 L30 54 Z"/>
+        <g class="rot"><ellipse cx="55" cy="40" rx="4" ry="16"/><ellipse cx="145" cy="40" rx="4" ry="16"/></g>
+        <line x1="55" y1="40" x2="55" y2="56"/><line x1="145" y1="40" x2="145" y2="56"/>
+        <path d="M60 26 q 12 -10 24 0" class="thin"/><path d="M150 26 q 12 -10 24 0" class="thin"/></g></svg>
+      <h3>Poussée vectorielle</h3>
+      <div class="pm"><span class="p">+ rapide</span><span class="m">− mécanique complexe</span></div>
+    </div>
+  </div>
+  <p class="callout big-callout">Multicoptère : le moteur = <b class="cy">propulsion</b> + <b class="or">pilotage</b></p>
+  <aside class="notes">Multicoptère (EHang 216, Volocopter) : uniquement des rotors fixes, le vol est piloté en faisant varier la vitesse de chaque moteur. Portance + croisière (Wisk, Beta) : rotors pour décoller, aile + hélice pour la croisière. Poussée vectorielle (Joby, Archer) : les rotors basculent. Pour un taxi-drone urbain (trajets courts, sécurité maximale) on retient le multicoptère. Point clé : pas de gouverne ni de pas variable, c'est la vitesse des moteurs qui pilote, donc il faut un moteur à couple précis et réponse rapide.</aside>
+</section>
+
+<!-- 5. MISE EN SITUATION -->
+<section class="slide" data-3d="inspect">
+  <div class="kicker">02 — Mise en situation</div>
+  <h2>Le taxi-drone <span class="cy">VX-8</span></h2>
+  <div class="cols c-3d">
+    <div class="v3d framed"><div class="v3d-hint">⟲ glisser · molette</div></div>
+    <div class="tiles">
+      <div class="tile"><div class="ti">👥</div><div class="tv">2</div><div class="tl">passagers</div></div>
+      <div class="tile"><div class="ti">⚖️</div><div class="tv"><span data-p="M"></span> kg</div><div class="tl">masse max</div></div>
+      <div class="tile"><div class="ti">🌀</div><div class="tv"><span data-p="N_ROT"></span> × Ø<span data-p="D"></span> m</div><div class="tl">rotors</div></div>
+      <div class="tile hl"><div class="ti">🧲</div><div class="tv"><span data-p="N_ROT"></span> MSAP</div><div class="tl">moteurs synchrones</div></div>
+      <div class="tile"><div class="ti">🔋</div><div class="tv"><span data-p="E_BAT" data-div="1000"></span> kWh</div><div class="tl"><span data-p="VDC_NOM"></span> V</div></div>
+      <div class="tile"><div class="ti">🏙️</div><div class="tv">20 km</div><div class="tl">90 km/h · 300 m</div></div>
+    </div>
+  </div>
+  <aside class="notes">Le VX-8 est un appareil d'étude que nous avons défini nous-mêmes, à partir des ordres de grandeur des taxi-drones existants. Mission type : aéroport → centre-ville, 20 km, croisière 90 km/h à 300 m, environ 16 minutes. Faire tourner le modèle 3D : 8 rotors sur un anneau, un moteur synchrone à entraînement direct sous chaque rotor.</aside>
+</section>
+
+<!-- 6. CHAÎNE DE CONVERSION -->
+<section class="slide">
+  <div class="kicker">02 — Mise en situation</div>
+  <h2>Chaîne de conversion d'énergie</h2>
+  <div class="chain">
+    <div class="node"><div class="ico">🔋</div><h4>Batterie</h4><div class="nv"><span data-p="VDC_NOM"></span> V DC</div></div>
+    <div class="flow dc"><span>DC</span></div>
+    <div class="node"><div class="ico">⚡</div><h4>Onduleur</h4><div class="nv">η 98 %</div></div>
+    <div class="flow ac"><span>AC 3~</span></div>
+    <div class="node star"><div class="ico">⚙️</div><h4>MSAP</h4><div class="nv">η <span data-k="eta_stat" data-pct="1"></span> %</div></div>
+    <div class="flow meca"><span>Ω, C</span></div>
+    <div class="node"><div class="ico">🌀</div><h4>Rotor</h4><div class="nv"><span data-k="T_stat" data-f="0"></span> N</div></div>
+  </div>
+  <div class="cols c2 tight">
+    <div class="card formula center">
+      <div class="eq">n = <span class="frac"><span>60 · f</span><span>p</span></span></div>
+      <div class="eqline"><b data-k="rpm_stat" data-f="0"></b> tr/min · p = <b data-p="P_POLES"></b> ⇒ <b class="cy">f = <span data-k="f_stat" data-f="0"></span> Hz</b></div>
+    </div>
+    <div class="card">
+      <div class="ctrl-grid">
+        <div><svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="18" class="ring"/><g class="m up"><circle cx="30" cy="12" r="6"/><circle cx="48" cy="30" r="6"/><circle cx="30" cy="48" r="6"/><circle cx="12" cy="30" r="6"/></g></svg><span>Monter</span></div>
+        <div><svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="18" class="ring"/><g class="m"><circle cx="30" cy="12" r="6" class="dn"/><circle cx="48" cy="30" r="6"/><circle cx="30" cy="48" r="6" class="up"/><circle cx="12" cy="30" r="6"/></g></svg><span>Avancer</span></div>
+        <div><svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="18" class="ring"/><g class="m"><circle cx="30" cy="12" r="6" class="up"/><circle cx="48" cy="30" r="6" class="dn"/><circle cx="30" cy="48" r="6" class="up"/><circle cx="12" cy="30" r="6" class="dn"/></g></svg><span>Pivoter</span></div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">On retrouve la chaîne vue en cours : source → convertisseur → machine → charge. L'onduleur (ESC) transforme le continu de la batterie en triphasé à fréquence variable. Le moteur synchrone tourne exactement à n = 60f/p : en stationnaire, 1463 tr/min avec 14 paires de pôles, l'onduleur impose 341 Hz. Piloter = faire varier les vitesses : tous les moteurs accélèrent pour monter ; l'arrière plus vite que l'avant pour avancer ; les moteurs d'un même sens de rotation accélèrent pour pivoter (couple de réaction).</aside>
+</section>
+
+<!-- 7. CAHIER DES CHARGES (interactif) -->
+<section class="slide">
+  <div class="kicker">02 — Mise en situation</div>
+  <h2>Cahier des charges d'un moteur</h2>
+  <div class="cols c2">
+    <div class="card">
+      <div class="sliders">
+        <label>⚖️ Masse <output id="o-m"></output><input type="range" id="s-m" min="600" max="1400" step="10" value="950"></label>
+        <label>🌀 Rotors <output id="o-n"></output><input type="range" id="s-n" min="0" max="4" step="1" value="2"></label>
+        <label>📏 Diamètre <output id="o-d"></output><input type="range" id="s-d" min="1.2" max="2.8" step="0.05" value="2"></label>
+        <label>🛡️ Marge <output id="o-k"></output><input type="range" id="s-k" min="1.3" max="2.5" step="0.05" value="2"></label>
+      </div>
+      <div class="formulas">
+        <div><b>T = C<sub>T</sub>·ρ·n²·D⁴</b></div>
+        <div><b>P = C<sub>P</sub>·ρ·n³·D⁵</b></div>
+        <div><b>C = P / Ω</b></div>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="res-grid">
+        <div class="res"><div class="rl">Poussée / rotor</div><div class="rv" id="r-T"></div></div>
+        <div class="res"><div class="rl">Vitesse</div><div class="rv" id="r-n"></div></div>
+        <div class="res"><div class="rl">Couple</div><div class="rv" id="r-C"></div></div>
+        <div class="res"><div class="rl">Puissance</div><div class="rv" id="r-P"></div></div>
+        <div class="res hl"><div class="rl">Couple max</div><div class="rv" id="r-Cm"></div></div>
+        <div class="res hl"><div class="rl">Puissance max</div><div class="rv" id="r-Pm"></div></div>
+        <div class="res"><div class="rl">Total stationnaire</div><div class="rv" id="r-Pt"></div></div>
+        <div class="res"><div class="rl">Autonomie</div><div class="rv" id="r-aut"></div></div>
+      </div>
+      <div class="verdict" id="verdict"></div>
+    </div>
+  </div>
+  <aside class="notes">Démonstration en direct : augmenter la masse ou réduire le diamètre et observer l'explosion de la puissance (P ∝ T^1,5 / D). Les valeurs du haut sont pour le vol stationnaire ; en orange, ce que le moteur doit pouvoir fournir avec la marge. Une marge ×2 est nécessaire pour manœuvrer et compenser la panne d'un moteur.</aside>
+</section>
+
+<!-- 8. POURQUOI LE MS -->
+<section class="slide">
+  <div class="kicker">03 — Choix du moteur</div>
+  <h2>MCC, MAS ou synchrone ?</h2>
+  <div class="cols c-comp">
+    <div class="card chartcard"><div class="chart" id="ch-comp"></div></div>
+    <div class="card">
+      <table class="compare">
+        <thead><tr><th></th><th>MCC</th><th>MAS</th><th class="cy">MSAP</th></tr></thead>
+        <tbody>
+          <tr><td>⚖️ kW/kg</td><td class="no">●●</td><td class="mid">●●●</td><td class="best">●●●●●</td></tr>
+          <tr><td>⚡ Rendement</td><td class="mid">●●●</td><td class="mid">●●●</td><td class="best">●●●●●</td></tr>
+          <tr><td>🔧 Entretien</td><td class="no">✖ balais</td><td class="best">✔</td><td class="best">✔</td></tr>
+          <tr><td>🎯 Vitesse</td><td class="mid">U−RI</td><td class="mid">g</td><td class="best">60f/p</td></tr>
+          <tr><td>💶 Coût</td><td class="mid">●●●</td><td class="best">●●●●●</td><td class="no">●●</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <aside class="notes">Lien avec le cours. MCC : la vitesse chute avec le couple (U = E + RI, E = KΩ) ; balais et collecteur s'usent et font des étincelles, inacceptable en aviation. MAS : la vitesse dépend du glissement, donc courants rotoriques et pertes Joule au rotor. MS : vitesse rigoureusement constante n = 60f/p jusqu'au couple de décrochage ; avec un onduleur on règle f donc la vitesse. Le MSAP offre la meilleure puissance par kg, critère n°1 pour voler ; son seul défaut est le coût des aimants.</aside>
+</section>
+
+<!-- 9. COURBE ROTOR -->
+<section class="slide">
+  <div class="kicker">04 — Courbes</div>
+  <h2>La charge : un rotor de 2 m</h2>
+  <div class="cols c-chart">
+    <div class="card chartcard"><div class="chart" id="ch-rotor"></div></div>
+    <div class="chips">
+      <div class="chip"><div class="cv cy">T ∝ Ω²</div><div class="cl">poussée</div></div>
+      <div class="chip"><div class="cv or">P ∝ Ω³</div><div class="cl">puissance</div></div>
+      <div class="chip hl"><div class="cv">×2 ⇒ <span class="or">×2,83</span></div><div class="cl">poussée ⇒ puissance</div></div>
+    </div>
+  </div>
+  <aside class="notes">Charge de type ventilateur : couple résistant en Ω², comme les ventilateurs et pompes centrifuges vus en cours. Doubler la poussée ⇒ vitesse ×√2 = ×1,41 ⇒ puissance ×2√2 = ×2,83. Stationnaire : 1463 tr/min, 19,9 kW. Poussée max : 2069 tr/min, 56,2 kW. Le moteur doit être dimensionné pour la poussée max, pas pour le stationnaire.</aside>
+</section>
+
+<!-- 10. ENVELOPPE -->
+<section class="slide">
+  <div class="kicker">04 — Courbes</div>
+  <h2>Caractéristique couple–vitesse</h2>
+  <div class="cols c-chart">
+    <div class="card chartcard"><div class="chart" id="ch-env"></div></div>
+    <div class="chips">
+      <div class="chip"><div class="cv cy"><span data-p="C_MAX"></span> N·m</div><div class="cl">couple max</div></div>
+      <div class="chip"><div class="cv or"><span data-p="P_MAX" data-div="1000"></span> kW</div><div class="cl">puissance max</div></div>
+      <div class="chip hl"><div class="cv gr">✔ marge</div><div class="cl">poussée max atteinte</div></div>
+    </div>
+  </div>
+  <aside class="notes">Couple constant : limité par le courant max (240 A crête), C = K·I comme pour la MCC. Puissance constante : limitée à 60 kW. Défluxage : à haute vitesse, la f.é.m. E = K·Ω approche la tension de la batterie ; on injecte un courant i_d négatif pour « affaiblir » le flux. Batterie faible ⇒ tension plus basse ⇒ la limite arrive plus tôt (pointillés). Le point de fonctionnement est l'intersection entre l'enveloppe et la courbe du rotor en Ω² : la poussée max est atteignable avec marge.</aside>
+</section>
+
+<!-- 11. CARTE DE RENDEMENT -->
+<section class="slide">
+  <div class="kicker">04 — Courbes</div>
+  <h2>Carte de rendement</h2>
+  <div class="cols c-chart">
+    <div class="card chartcard"><div class="chart" id="ch-eta"></div></div>
+    <div class="chips">
+      <div class="chip hl"><div class="cv gr"><span data-k="eta_stat" data-pct="1"></span> %</div><div class="cl">en stationnaire</div></div>
+      <div class="chip"><div class="cv or">R·I²</div><div class="cl">bas régime, fort couple</div></div>
+      <div class="chip"><div class="cv vi">P<sub>fer</sub></div><div class="cl">haut régime</div></div>
+    </div>
+  </div>
+  <aside class="notes">Survoler la carte à la souris pour lire le rendement. À faible vitesse et fort couple, les pertes Joule R·I² dominent. À haute vitesse, les pertes fer (∝ f et f²). Ligne pointillée blanche : couple demandé par le rotor. Le moteur a été choisi pour que cette ligne traverse la zone de meilleur rendement (> 95 %).</aside>
+</section>
+
+<!-- 12. BILAN DE PUISSANCE -->
+<section class="slide">
+  <div class="kicker">04 — Courbes</div>
+  <h2>Bilan de puissance</h2>
+  <div class="cols c-chart">
+    <div class="card chartcard"><div class="chart" id="ch-bilan"></div></div>
+    <div class="chips">
+      <div class="chip"><div class="cv eqc">η = P<sub>u</sub> / P<sub>a</sub></div><div class="cl">comme dans le cours</div></div>
+      <div class="chip hl"><div class="cv gr"><span data-k="eta_stat" data-pct="1"></span> %</div><div class="cl">rendement moteur</div></div>
+      <div class="chip"><div class="cv or"><span data-k="P_total_stat" data-div="1000" data-f="0"></span> kW</div><div class="cl">tout l'appareil</div></div>
+    </div>
+  </div>
+  <aside class="notes">P_a = P_u + P_J + P_fer + P_méca, exactement le bilan vu pour la MCC. Les pertes collectives (fer + mécaniques) sont quasi constantes à vitesse donnée. Pas de pertes Joule au rotor : il n'a pas de bobinage, seulement des aimants. Pour tout l'appareil (8 moteurs + avionique) : 173 kW tirés de la batterie en stationnaire. Attention, l'axe vertical est tronqué pour bien voir les pertes.</aside>
+</section>
+
+<!-- 13. SIMULATION MISSION -->
+<section class="slide" data-3d="mission">
+  <div class="kicker">05 — Simulation</div>
+  <h2>Mission complète</h2>
+  <div class="cols c-mission">
+    <div class="v3d framed">
+      <div class="phase" id="m-phase">Prêt</div>
+      <div class="player">
+        <button id="m-play" class="btn">▶ Lancer</button>
+        <input type="range" id="m-scrub" min="0" max="1000" value="0">
+        <select id="m-speed"><option value="15">×15</option><option value="30" selected>×30</option><option value="60">×60</option></select>
+        <span id="m-time" class="mono">00:00</span>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="gauges" id="gauges"></div>
+      <div class="card chartcard small-chart"><div class="chart" id="ch-mis1"></div></div>
+      <div class="card chartcard small-chart"><div class="chart" id="ch-mis2"></div></div>
+    </div>
+  </div>
+  <aside class="notes">Simulation Python (pas de 10 ms) : régulation d'altitude, régulation de vitesse de chaque moteur, modèle d-q du moteur, aérodynamique du rotor, batterie et échauffement. À commenter : pic de couple au décollage ; baisse de puissance en croisière (le rotor travaille dans un air « neuf ») ; la fréquence électrique suit f = p·n/60 ; freinage récupératif à l'arrêt des rotors (fonctionnement en génératrice). Bilan : 35 kWh consommés, 42 % de batterie restante, bobinage à 68 °C max.</aside>
+</section>
+
+<!-- 14. PANNE MOTEUR -->
+<section class="slide" data-3d="top">
+  <div class="kicker">05 — Simulation</div>
+  <h2>Panne d'un moteur</h2>
+  <div class="cols c-mission">
+    <div class="v3d framed">
+      <div class="phase" id="p-phase">Vol stationnaire à 30 m</div>
+      <div class="player"><button id="p-play" class="btn danger">⚠ Panne du moteur 1</button><span id="p-time" class="mono">t = 0,00 s</span></div>
+    </div>
+    <div class="stack">
+      <div class="card chartcard small-chart"><div class="chart" id="ch-pbars"></div></div>
+      <div class="card chartcard small-chart"><div class="chart" id="ch-prpm"></div></div>
+      <div class="chiprow">
+        <div class="chip"><div class="cv">0,15 s</div><div class="cl">détection</div></div>
+        <div class="chip"><div class="cv or">⚡ CC</div><div class="cl">frein</div></div>
+        <div class="chip hl"><div class="cv gr">−<span data-k="chute_panne" data-mul="100" data-f="0"></span> cm</div><div class="cl">altitude</div></div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">À t = 2 s l'onduleur du moteur 1 tombe en panne. Après détection (0,15 s), il met le moteur en court-circuit (CC) : le moteur synchrone devient une génératrice en court-circuit et freine le rotor. Les 7 autres compensent : les moteurs 4 et 6 ralentissent pour équilibrer roulis et lacet, les moteurs 3 et 7 accélèrent fortement, d'où la marge de poussée ×2. Perte d'altitude : 2 cm. Le courant de court-circuit d'un MSAP vaut environ ψ/L : point à approfondir à la séance 2.</aside>
+</section>
+
+<!-- 15. CONCLUSION -->
+<section class="slide">
+  <div class="kicker">Synthèse</div>
+  <h2>À retenir</h2>
+  <div class="cols c3">
+    <div class="card big"><div class="bi">🧲</div><div class="bn cy" data-k="C_maxi" data-f="0"></div><div class="bu">N·m par moteur</div></div>
+    <div class="card big"><div class="bi">⚡</div><div class="bn gr" data-k="eta_stat" data-pct="1"></div><div class="bu">% de rendement</div></div>
+    <div class="card big"><div class="bi">🔋</div><div class="bn or" data-k="energie_mission" data-f="0"></div><div class="bu">kWh pour 20 km</div></div>
+  </div>
+  <div class="next">Prochaine séance · 01/12 → <b>le moteur synchrone de l'intérieur</b> 🧲</div>
+  <aside class="notes">Conclusions : dans un multicoptère, le moteur est propulsion + pilotage. Le MSAP s'impose : puissance massique, rendement, vitesse imposée par f. Le dimensionnement est fixé par la poussée max (marge ×2), pas par le stationnaire : 260 N·m à 2069 tr/min. Il reste 42 % de batterie après la mission. Prochaine séance : constitution (stator, rotor à aimants, vue 3D éclatée), champ tournant et synchronisme, modèle électrique. Questions ?</aside>
+</section>
+
+</div>
+
+<div id="hud">
+  <div id="progress"><div></div></div>
+  <div id="footer"><span>Taxi-drone eVTOL · moteur synchrone</span><span id="counter"></span></div>
+</div>
+<div id="notes-panel"></div>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/plotly.min.js"></script>
+<script src="data/sim.js"></script>
+<script src="js/drone3d.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
